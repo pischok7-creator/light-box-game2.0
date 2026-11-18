@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LIGHT BOX - Space Galaxy Arcade Edition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #060214;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    #spaceCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .main-wrapper {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 15px 12px 10px 12px;
+    }
+
+    /* Animation Shake Layar */
+    .shake {
+      animation: shakeAnim 0.25s ease-in-out;
+    }
+
+    @keyframes shakeAnim {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-4px, 4px); }
+      40% { transform: translate(4px, -4px); }
+      60% { transform: translate(-3px, -3px); }
+      80% { transform: translate(3px, 3px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    /* PERBAIKAN HEADER JUDUL agar tidak terpotong */
+    .header-box {
+      width: 100%;
+      text-align: center;
+      padding-top: 5px;
+      padding-bottom: 5px;
+      flex-shrink: 0;
+    }
+
+    h1.title {
+      font-size: clamp(1.4rem, 6vw, 2.2rem);
+      font-weight: 900;
+      letter-spacing: 4px;
+      background: linear-gradient(90deg, #00f0ff, #e000ff, #ffaa00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.7);
+      text-transform: uppercase;
+      line-height: 1.3;
+      display: block;
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      background: rgba(12, 8, 32, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 10px;
+      border-radius: 16px;
+      box-shadow: 0 0 35px rgba(180, 0, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.2);
+      border: 1.5px solid rgba(0, 240, 255, 0.5);
+      position: relative;
+      width: 100%;
+      justify-content: center;
+      flex-shrink: 1;
+    }
+
+    canvas#gameBoard {
+      background-color: rgba(5, 3, 18, 0.9);
+      border: 2px solid #00f0ff;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+      display: block;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 95px;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+      padding: 6px 4px;
+      margin-bottom: 6px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+    }
+
+    .info-box h3 {
+      font-size: 0.6rem;
+      color: #00f0ff;
+      letter-spacing: 1.5px;
+    }
+
+    .info-box p {
+      font-size: 1rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+
+    canvas#nextPiece {
+      background-color: rgba(10, 5, 25, 0.8);
+      border: 1px solid rgba(224, 0, 255, 0.5);
+      border-radius: 6px;
+      margin: 4px auto 0 auto;
+      display: block;
+    }
+
+    button.btn-action {
+      background: linear-gradient(135deg, #00f0ff, #e000ff);
+      border: none;
+      color: white;
+      padding: 10px 4px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 800;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+      letter-spacing: 1px;
+    }
+
+    button.btn-action:active {
+      transform: scale(0.95);
+      filter: brightness(1.3);
+    }
+
+    /* KONTROL D-PAD CYBER FUTURISTIK */
+    .arcade-controller {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 10px;
+      margin-bottom: 5px;
+      flex-shrink: 0;
+    }
+
+    .dpad-cross {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(20, 15, 45, 0.8) 0%, rgba(5, 3, 20, 0.9) 70%);
+      border-radius: 50%;
+      border: 2px solid rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dpad-btn {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(145deg, rgba(25, 35, 75, 0.9), rgba(10, 15, 40, 0.95));
+      border: 1.5px solid #00f0ff;
+      border-radius: 10px;
+      color: #00f0ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3), inset 0 0 8px rgba(0, 240, 255, 0.2);
+      transition: all 0.08s ease-out;
+      overflow: hidden;
+    }
+
+    .dpad-btn.up    { top: 4px; }
+    .dpad-btn.down  { bottom: 4px; }
+    .dpad-btn.left  { left: 4px; }
+    .dpad-btn.right { right: 4px; }
+
+    .dpad-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #00f0ff;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 4px #00f0ff);
+      transition: all 0.08s ease;
+    }
+
+    .dpad-btn:active, .dpad-btn.active {
+      transform: scale(0.85);
+      background: #00f0ff;
+      border-color: #fff;
+      box-shadow: 0 0 25px #00f0ff, 0 0 45px #00f0ff;
+    }
+
+    .dpad-btn:active svg, .dpad-btn.active svg {
+      stroke: #050314;
+      filter: drop-shadow(0 0 2px #fff);
+    }
+
+    .action-container {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .action-btn {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(50, 10, 60, 0.9), rgba(20, 5, 30, 0.95));
+      border: 2px solid #e000ff;
+      color: #e000ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      box-shadow: 0 0 15px rgba(224, 0, 255, 0.4), inset 0 0 10px rgba(224, 0, 255, 0.2);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      overflow: hidden;
+    }
+
+    .action-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: #e000ff;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 5px #e000ff);
+    }
+
+    .action-btn.hard-drop {
+      border-color: #ffaa00;
+      color: #ffaa00;
+      box-shadow: 0 0 15px rgba(255, 170, 0, 0.4), inset 0 0 10px rgba(255, 170, 0, 0.2);
+    }
+
+    .action-btn.hard-drop svg {
+      stroke: #ffaa00;
+      filter: drop-shadow(0 0 5px #ffaa00);
+    }
+
+    .action-btn:active {
+      transform: scale(0.85);
+      background: #e000ff;
+      box-shadow: 0 0 30px #e000ff;
+    }
+    .action-btn:active svg { stroke: #fff; }
+
+    .action-btn.hard-drop:active {
+      background: #ffaa00;
+      box-shadow: 0 0 30px #ffaa00;
+    }
+    .action-btn.hard-drop:active svg { stroke: #fff; }
+
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.8);
+      transform: scale(0);
+      animation: rippleAnim 0.3s linear;
+      pointer-events: none;
+    }
+
+    @keyframes rippleAnim {
+      to { transform: scale(3); opacity: 0; }
+    }
+
+    .online-status {
+      margin-top: 6px;
+      font-size: 0.6rem;
+      color: #00ff66;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      text-shadow: 0 0 6px #00ff66;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background-color: #00ff66;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #00ff66;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(5, 2, 20, 0.92);
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 14px;
+      z-index: 10;
+      padding: 15px;
+    }
+
+    .overlay h2 {
+      font-size: 1.5rem;
+      color: #e000ff;
+      text-shadow: 0 0 15px #e000ff;
+      margin-bottom: 15px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <canvas id="spaceCanvas"></canvas>
+
+  <div class="main-wrapper" id="mainWrapper">
+    <!-- WAPPER HEADER DIPERBAIKI -->
+    <div class="header-box">
+      <h1 class="title">LIGHT BOX</h1>
+    </div>
+
+    <div class="game-container">
+      <div id="overlay" class="overlay">
+        <h2 id="overlayText">LIGHT BOX</h2>
+        <button class="btn-action" id="startBtn" onclick="startGame()">PLAY GAME</button>
+      </div>
+
+      <canvas id="gameBoard"></canvas>
+
+      <div class="side-panel">
+        <div>
+          <div class="info-box">
+            <h3>NEXT</h3>
+            <canvas id="nextPiece" width="60" height="60"></canvas>
+          </div>
+          <div class="info-box">
+            <h3>SCORE</h3>
+            <p id="score">0</p>
+          </div>
+          <div class="info-box">
+            <h3>LEVEL</h3>
+            <p id="level">1</p>
+          </div>
+          <div class="info-box">
+            <h3>LINES</h3>
+            <p id="lines">0</p>
+          </div>
+        </div>
+
+        <div>
+          <button class="btn-action" id="pauseBtn" onclick="togglePause()">PAUSE</button>
+          <div class="online-status">
+            <span class="status-dot"></span> ONLINE
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arcade-controller">
+      <div class="dpad-cross">
+        <div class="dpad-btn up" ontouchstart="handleTouch(event, playerRotate)" onclick="playerRotate()">
+          <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </div>
+        <div class="dpad-btn left" ontouchstart="handleTouch(event, () => playerMove(-1, 0))" onclick="playerMove(-1, 0)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </div>
+        <div class="dpad-btn right" ontouchstart="handleTouch(event, () => playerMove(1, 0))" onclick="playerMove(1, 0)">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+        <div class="dpad-btn down" ontouchstart="handleTouch(event, () => playerMove(0, 1))" onclick="playerMove(0, 1)">
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+
+      <div class="action-container">
+        <div class="action-btn" ontouchstart="handleTouch(event, playerRotate)" onclick="playerRotate()">
+          <svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+        </div>
+        <div class="action-btn hard-drop" ontouchstart="handleTouch(event, playerDropHard)" onclick="playerDropHard()">
+          <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function handleTouch(e, actionFunction) {
+      e.preventDefault();
+      const btn = e.currentTarget;
+
+      btn.classList.add('active');
+      setTimeout(() => btn.classList.remove('active'), 120);
+
+      const rect = btn.getBoundingClientRect();
+      const circle = document.createElement("span");
+      const diameter = Math.max(rect.width, rect.height);
+      const radius = diameter / 2;
+
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${clientX - rect.left - radius}px`;
+      circle.style.top = `${clientY - rect.top - radius}px`;
+      circle.classList.add("ripple");
+
+      const existingRipple = btn.getElementsByClassName("ripple")[0];
+      if (existingRipple) existingRipple.remove();
+
+      btn.appendChild(circle);
+      actionFunction();
+    }
+
+    const spaceCanvas = document.getElementById('spaceCanvas');
+    const sCtx = spaceCanvas.getContext('2d');
+
+    let stars = [];
+    let angleEarth = 0;
+    let anglePurplePlanet = 0;
+    let ufoX = -100, ufoY = 150, ufoFloat = 0;
+    let cuteUfoX = -80, cuteUfoY = 0, cuteUfoAngle = 0;
+    let astronautY = 0, astronautAngle = 0;
+
+    function resizeSpaceCanvas() {
+      spaceCanvas.width = window.innerWidth;
+      spaceCanvas.height = window.innerHeight;
+      initStars();
+    }
+    window.addEventListener('resize', resizeSpaceCanvas);
+
+    function initStars() {
+      stars = [];
+      for (let i = 0; i < 90; i++) {
+        stars.push({
+          x: Math.random() * spaceCanvas.width,
+          y: Math.random() * spaceCanvas.height,
+          size: Math.random() * 2.5 + 1,
+          alpha: Math.random(),
+          speedAlpha: Math.random() * 0.02 + 0.005,
+          isCrossStar: Math.random() < 0.25
+        });
+      }
+    }
+
+    function drawSpaceBackground() {
+      let bgGrad = sCtx.createRadialGradient(
+        spaceCanvas.width / 2, spaceCanvas.height / 2, 50,
+        spaceCanvas.width / 2, spaceCanvas.height / 2, Math.max(spaceCanvas.width, spaceCanvas.height)
+      );
+      bgGrad.addColorStop(0, '#150638');
+      bgGrad.addColorStop(0.5, '#0b0321');
+      bgGrad.addColorStop(1, '#04010d');
+      sCtx.fillStyle = bgGrad;
+      sCtx.fillRect(0, 0, spaceCanvas.width, spaceCanvas.height);
+
+      stars.forEach(star => {
+        star.alpha += star.speedAlpha;
+        if (star.alpha > 1 || star.alpha < 0.2) star.speedAlpha = -star.speedAlpha;
+
+        sCtx.save();
+        sCtx.globalAlpha = Math.abs(star.alpha);
+        sCtx.fillStyle = '#ffffff';
+        sCtx.shadowBlur = 8;
+        sCtx.shadowColor = '#d080ff';
+
+        if (star.isCrossStar) {
+          sCtx.strokeStyle = '#ffffff';
+          sCtx.lineWidth = 1;
+          sCtx.beginPath();
+          sCtx.moveTo(star.x - star.size * 3, star.y);
+          sCtx.lineTo(star.x + star.size * 3, star.y);
+          sCtx.moveTo(star.x, star.y - star.size * 3);
+          sCtx.lineTo(star.x, star.y + star.size * 3);
+          sCtx.stroke();
+        } else {
+          sCtx.beginPath();
+          sCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+          sCtx.fill();
+        }
+        sCtx.restore();
+      });
+
+      anglePurplePlanet += 0.002;
+      const pPurpleX = spaceCanvas.width * 0.2;
+      const pPurpleY = spaceCanvas.height * 0.15 + Math.sin(anglePurplePlanet) * 8;
+
+      sCtx.save();
+      sCtx.shadowBlur = 30;
+      sCtx.shadowColor = '#b000ff';
+      let pPurpGrad = sCtx.createRadialGradient(pPurpleX - 25, pPurpleY - 25, 10, pPurpleX, pPurpleY, 70);
+      pPurpGrad.addColorStop(0, '#d866ff');
+      pPurpGrad.addColorStop(0.6, '#7b00ca');
+      pPurpGrad.addColorStop(1, '#2c0050');
+      sCtx.fillStyle = pPurpGrad;
+      sCtx.beginPath();
+      sCtx.arc(pPurpleX, pPurpleY, 70, 0, Math.PI * 2);
+      sCtx.fill();
+      sCtx.restore();
+
+      angleEarth += 0.003;
+      const earthX = spaceCanvas.width * 0.5;
+      const earthY = spaceCanvas.height + 110 + Math.sin(angleEarth) * 12;
+      const earthRadius = Math.max(spaceCanvas.width * 0.65, 260);
+
+      sCtx.save();
+      sCtx.shadowBlur = 40;
+      sCtx.shadowColor = '#00f0ff';
+      let earthGrad = sCtx.createRadialGradient(earthX, earthY - earthRadius * 0.5, earthRadius * 0.2, earthX, earthY, earthRadius);
+      earthGrad.addColorStop(0, '#66f0ff');
+      earthGrad.addColorStop(0.4, '#0077ff');
+      earthGrad.addColorStop(0.8, '#001a66');
+      earthGrad.addColorStop(1, '#020014');
+      sCtx.fillStyle = earthGrad;
+      sCtx.beginPath();
+      sCtx.arc(earthX, earthY, earthRadius, 0, Math.PI * 2);
+      sCtx.fill();
+
+      sCtx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+      sCtx.lineWidth = 4;
+      sCtx.stroke();
+      sCtx.restore();
+
+      ufoX += 0.8;
+      ufoFloat += 0.03;
+      ufoY = spaceCanvas.height * 0.28 + Math.sin(ufoFloat) * 10;
+      if (ufoX > spaceCanvas.width + 120) ufoX = -120;
+
+      sCtx.save();
+      let beamGrad = sCtx.createLinearGradient(ufoX, ufoY, ufoX, ufoY + 220);
+      beamGrad.addColorStop(0, 'rgba(0, 240, 255, 0.45)');
+      beamGrad.addColorStop(1, 'rgba(0, 240, 255, 0.0)');
+      sCtx.fillStyle = beamGrad;
+      sCtx.beginPath();
+      sCtx.moveTo(ufoX - 15, ufoY + 8);
+      sCtx.lineTo(ufoX + 15, ufoY + 8);
+      sCtx.lineTo(ufoX + 70, ufoY + 220);
+      sCtx.lineTo(ufoX - 70, ufoY + 220);
+      sCtx.closePath();
+      sCtx.fill();
+
+      sCtx.shadowBlur = 15;
+      sCtx.shadowColor = '#00f0ff';
+      sCtx.fillStyle = '#80f0ff';
+      sCtx.beginPath();
+      sCtx.arc(ufoX, ufoY - 5, 16, Math.PI, 0);
+      sCtx.fill();
+      sCtx.fillStyle = '#2b1b54';
+      sCtx.strokeStyle = '#00f0ff';
+      sCtx.lineWidth = 2;
+      sCtx.beginPath();
+      sCtx.ellipse(ufoX, ufoY, 40, 12, 0, 0, Math.PI * 2);
+      sCtx.fill();
+      sCtx.stroke();
+      sCtx.fillStyle = '#ff00ea';
+      [-22, -8, 8, 22].forEach(lx => {
+        sCtx.beginPath();
+        sCtx.arc(ufoX + lx, ufoY + 2, 3, 0, Math.PI * 2);
+        sCtx.fill();
+      });
+      sCtx.restore();
+
+      astronautY += 0.02;
+      astronautAngle += 0.008;
+      const astroX = spaceCanvas.width * 0.18 + Math.cos(astronautAngle) * 15;
+      const astroY = spaceCanvas.height * 0.42 + Math.sin(astronautY) * 12;
+
+      sCtx.save();
+      sCtx.translate(astroX, astroY);
+      sCtx.rotate(Math.sin(astronautAngle) * 0.2);
+      sCtx.shadowBlur = 10;
+      sCtx.shadowColor = '#ffffff';
+
+      sCtx.fillStyle = '#ffffff';
+      sCtx.beginPath();
+      sCtx.arc(0, -10, 10, 0, Math.PI * 2);
+      sCtx.fill();
+      sCtx.fillStyle = '#00f0ff';
+      sCtx.beginPath();
+      sCtx.arc(3, -10, 5, 0, Math.PI * 2);
+      sCtx.fill();
+      sCtx.fillStyle = '#e0e0e0';
+      sCtx.fillRect(-7, 0, 14, 18);
+      sCtx.fillStyle = '#ff0055';
+      sCtx.fillRect(-3, 4, 6, 4);
+      sCtx.restore();
+
+      cuteUfoX += 0.6;
+      cuteUfoAngle += 0.02;
+      cuteUfoY = spaceCanvas.height * 0.78 + Math.sin(cuteUfoAngle) * 8;
+      if (cuteUfoX > spaceCanvas.width + 80) cuteUfoX = -80;
+
+      sCtx.save();
+      sCtx.translate(cuteUfoX, cuteUfoY);
+      sCtx.shadowBlur = 12;
+      sCtx.shadowColor = '#ff00ea';
+      sCtx.strokeStyle = '#ff00ea';
+      sCtx.lineWidth = 2;
+      sCtx.fillStyle = 'rgba(255, 0, 234, 0.2)';
+      sCtx.beginPath();
+      sCtx.ellipse(0, 0, 25, 10, -0.1, 0, Math.PI * 2);
+      sCtx.fill();
+      sCtx.stroke();
+      sCtx.restore();
+
+      requestAnimationFrame(drawSpaceBackground);
+    }
+
+    resizeSpaceCanvas();
+    drawSpaceBackground();
+
+    const canvas = document.getElementById('gameBoard');
+    const ctx = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('nextPiece');
+    const nextCtx = nextCanvas.getContext('2d');
+
+    const COLS = 10;
+    const ROWS = 20;
+    let BLOCK_SIZE = 18;
+
+    let explosionParticles = [];
+
+    function resizeGameCanvas() {
+      const availableHeight = window.innerHeight - 260; 
+      BLOCK_SIZE = Math.max(12, Math.min(22, Math.floor(availableHeight / ROWS)));
+      canvas.width = COLS * BLOCK_SIZE;
+      canvas.height = ROWS * BLOCK_SIZE;
+      draw();
+    }
+    window.addEventListener('resize', resizeGameCanvas);
+
+    const COLORS = [
+      null,
+      '#00f0ff', '#ff00ea', '#ff0055', '#00ff66', '#ffaa00', '#0066ff', '#ffff00'
+    ];
+
+    const SHAPES = [
+      [],
+      [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+      [[0, 2, 0], [2, 2, 2], [0, 0, 0]],
+      [[3, 3, 0], [0, 3, 3], [0, 0, 0]],
+      [[0, 4, 4], [4, 4, 0], [0, 0, 0]],
+      [[0, 0, 5], [5, 5, 5], [0, 0, 0]],
+      [[6, 0, 0], [6, 6, 6], [0, 0, 0]],
+      [[7, 7], [7, 7]]
+    ];
+
+    let grid = createGrid();
+    let score = 0, lines = 0, level = 1;
+    let gameOver = false, isPaused = false;
+    let dropCounter = 0, dropInterval = 1000, lastTime = 0, animationId = null;
+
+    let player = { pos: {x: 0, y: 0}, matrix: null, nextMatrix: null };
+
+    function getRandomPiece() {
+      const randomIndex = Math.floor(Math.random() * (SHAPES.length - 1)) + 1;
+      return SHAPES[randomIndex];
+    }
+
+    function createGrid() {
+      return Array.from({length: ROWS}, () => Array(COLS).fill(0));
+    }
+
+    function triggerScreenShake() {
+      const wrapper = document.getElementById('mainWrapper');
+      wrapper.classList.remove('shake');
+      void wrapper.offsetWidth;
+      wrapper.classList.add('shake');
+    }
+
+    function createExplosion(yRow, colorsList) {
+      for (let x = 0; x < COLS; x++) {
+        const px = x * BLOCK_SIZE + BLOCK_SIZE / 2;
+        const py = yRow * BLOCK_SIZE + BLOCK_SIZE / 2;
+        const color = colorsList[x] || '#00f0ff';
+
+        for (let i = 0; i < 5; i++) {
+          explosionParticles.push({
+            x: px, y: py,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            radius: Math.random() * 3 + 1,
+            color: color, alpha: 1.0, life: 0.04
+          });
+        }
+      }
+    }
+
+    function updateParticles() {
+      for (let i = explosionParticles.length - 1; i >= 0; i--) {
+        let p = explosionParticles[i];
+        p.x += p.vx; p.y += p.vy; p.alpha -= p.life;
+        if (p.alpha <= 0) {
+          explosionParticles.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = 'rgba(5, 3, 18, 0.9)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      drawGridLines();
+      if (player.matrix) drawMatrix(player.matrix, player.pos, ctx, BLOCK_SIZE);
+      drawMatrix(grid, {x: 0, y: 0}, ctx, BLOCK_SIZE);
+      updateParticles();
+
+      nextCtx.fillStyle = 'rgba(10, 5, 25, 0.9)';
+      nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+      if (player.nextMatrix) {
+        drawMatrix(player.nextMatrix, {x: 0.5, y: 0.5}, nextCtx, 12);
+      }
+    }
+
+    function drawGridLines() {
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+      ctx.lineWidth = 1;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        }
+      }
+    }
+
+    function drawMatrix(matrix, offset, context, size) {
+      matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) {
+            const posX = (x + offset.x) * size;
+            const posY = (y + offset.y) * size;
+            const color = COLORS[value];
+
+            context.strokeStyle = color;
+            context.lineWidth = 2;
+            context.shadowBlur = 8;
+            context.shadowColor = color;
+            context.strokeRect(posX + 1, posY + 1, size - 2, size - 2);
+
+            context.fillStyle = color;
+            context.globalAlpha = 0.35;
+            context.fillRect(posX + 2, posY + 2, size - 4, size - 4);
+            context.globalAlpha = 1.0;
+          }
+        });
+      });
+      context.shadowBlur = 0;
+    }
+
+    function collide(grid, player) {
+      const [m, o] = [player.matrix, player.pos];
+      for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+          if (m[y][x] !== 0 && (grid[y + o.y] && grid[y + o.y][x + o.x]) !== 0) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function merge(grid, player) {
+      player.matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) grid[y + player.pos.y][x + player.pos.x] = value;
+        });
+      });
+    }
+
+    function playerReset() {
+      if (!player.nextMatrix) player.nextMatrix = getRandomPiece();
+      player.matrix = player.nextMatrix;
+      player.nextMatrix = getRandomPiece();
+      player.pos.y = 0;
+      player.pos.x = (grid[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+
+      if (collide(grid, player)) {
+        gameOver = true;
+        document.getElementById('overlayText').innerText = "GAME OVER";
+        document.getElementById('startBtn').innerText = "RETRY";
+        document.getElementById('overlay').classList.remove('hidden');
+        cancelAnimationFrame(animationId);
+      }
+    }
+
+    function playerMove(dirX, dirY) {
+      if (gameOver || isPaused) return;
+      player.pos.x += dirX;
+      if (collide(grid, player)) player.pos.x -= dirX;
+
+      if (dirY > 0) {
+        player.pos.y += dirY;
+        if (collide(grid, player)) {
+          player.pos.y--;
+          merge(grid, player);
+          clearLines();
+          playerReset();
+        }
+        dropCounter = 0;
+      }
+      draw();
+    }
+
+    function playerDropHard() {
+      if (gameOver || isPaused) return;
+      while (!collide(grid, player)) player.pos.y++;
+      player.pos.y--;
+      merge(grid, player);
+      triggerScreenShake();
+      clearLines();
+      playerReset();
+      dropCounter = 0;
+      draw();
+    }
+
+    function rotate(matrix) {
+      return matrix.map((_, i) => matrix.map(row => row[i]).reverse());
+    }
+
+    function playerRotate() {
+      if (gameOver || isPaused) return;
+      const pos = player.pos.x;
+      let offset = 1;
+      const matrix = player.matrix;
+      player.matrix = rotate(player.matrix);
+      
+      while (collide(grid, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if (offset > player.matrix[0].length) {
+          player.matrix = matrix;
+          player.pos.x = pos;
+          return;
+        }
+      }
+      draw();
+    }
+
+    function clearLines() {
+      let linesCleared = 0;
+      outer: for (let y = grid.length - 1; y >= 0; --y) {
+        for (let x = 0; x < grid[y].length; ++x) {
+          if (grid[y][x] === 0) continue outer;
+        }
+
+        const colorsInRow = grid[y].map(val => COLORS[val]);
+        createExplosion(y, colorsInRow);
+
+        const row = grid.splice(y, 1)[0].fill(0);
+        grid.unshift(row);
+        ++y;
+        linesCleared++;
+      }
+
+      if (linesCleared > 0) {
+        triggerScreenShake();
+        let addedScore = linesCleared * 100 * level;
+        if (linesCleared >= 4) addedScore += 400;
+
+        score += addedScore;
+        lines += linesCleared;
+        level = Math.floor(lines / 10) + 1;
+        dropInterval = Math.max(120, 1000 - (level - 1) * 70);
+
+        document.getElementById('score').innerText = score;
+        document.getElementById('lines').innerText = lines;
+        document.getElementById('level').innerText = level;
+      }
+    }
+
+    function update(time = 0) {
+      if (gameOver || isPaused) return;
+
+      const deltaTime = time - lastTime;
+      lastTime = time;
+
+      dropCounter += deltaTime;
+      if (dropCounter > dropInterval) playerMove(0, 1);
+
+      draw();
+      animationId = requestAnimationFrame(update);
+    }
+
+    function startGame() {
+      grid = createGrid();
+      explosionParticles = [];
+      score = 0; lines = 0; level = 1; dropInterval = 1000;
+      gameOver = false; isPaused = false;
+
+      document.getElementById('score').innerText = score;
+      document.getElementById('lines').innerText = lines;
+      document.getElementById('level').innerText = level;
+      document.getElementById('pauseBtn').innerText = "PAUSE";
+      document.getElementById('overlay').classList.add('hidden');
+
+      resizeGameCanvas();
+      playerReset();
+      lastTime = performance.now();
+      update();
+    }
+
+    function togglePause() {
+      if (gameOver) return;
+      isPaused = !isPaused;
+      const pauseBtn = document.getElementById('pauseBtn');
+      const overlay = document.getElementById('overlay');
+
+      if (isPaused) {
+        pauseBtn.innerText = "RESUME";
+        document.getElementById('overlayText').innerText = "PAUSED";
+        document.getElementById('startBtn').innerText = "RESUME";
+        overlay.classList.remove('hidden');
+      } else {
+        pauseBtn.innerText = "PAUSE";
+        overlay.classList.add('hidden');
+        lastTime = performance.now();
+        update();
+      }
+    }
+
+    document.addEventListener('keydown', event => {
+      if (gameOver) return;
+      switch (event.keyCode) {
+        case 37: playerMove(-1, 0); break;
+        case 39: playerMove(1, 0); break;
+        case 40: playerMove(0, 1); break;
+        case 38: playerRotate(); break;
+        case 32: playerDropHard(); break;
+        case 80: togglePause(); break;
+      }
+    });
+
+    resizeGameCanvas();
+  </script>
+</body>
+</html>
